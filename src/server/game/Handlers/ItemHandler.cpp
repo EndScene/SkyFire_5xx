@@ -37,8 +37,9 @@ void WorldSession::HandleSplitItemOpcode(WorldPacket& recvData)
     uint8 srcbag, srcslot, dstbag, dstslot, unknownBitCounter;
     uint32 count;
 
+    recvData >> dstslot >> dstbag >> srcslot;
     recvData >> count;
-    recvData >> dstbag >> srcbag >> dstslot >> srcslot;
+    recvData >> srcbag;
 
     unknownBitCounter = recvData.ReadBits(2);
 
@@ -149,7 +150,7 @@ void WorldSession::HandleSwapItem(WorldPacket& recvData)
     if (count != 2)
         return;
 
-    recvData >> dstbag >> dstslot >> srcbag >> srcslot;
+    recvData >> dstslot >> dstbag >> srcslot >> srcbag;
 
     //TC_LOG_DEBUG("STORAGE: receive srcbag = %u, srcslot = %u, dstbag = %u, dstslot = %u", srcbag, srcslot, dstbag, dstslot);
 

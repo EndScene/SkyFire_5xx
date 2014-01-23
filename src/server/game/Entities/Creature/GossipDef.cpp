@@ -233,10 +233,10 @@ void PlayerMenu::SendGossipMenu(uint32 titleTextId, uint64 objectGUID) const
 
         data.WriteString(item.Message);                     // text for gossip item
         data.WriteString(item.BoxMessage);                  // accept text (related to money) pop up box, 2.0.
-        data << int32(item.BoxMoney);                       // money required to open menu, 2.0.3
+        data << int32(itr->first);
         data << int8(item.IsCoded);                         // makes pop up box password
         data << int8(item.MenuItemIcon);
-        data << int32(itr->first);
+        data << int32(item.BoxMoney);                       // money required to open menu, 2.0.3
     }
 
     for (uint8 i = 0; i < _questMenu.GetMenuItemCount(); ++i)
@@ -254,7 +254,7 @@ void PlayerMenu::SendGossipMenu(uint32 titleTextId, uint64 objectGUID) const
 
     data.WriteByteSeq(guid[7]);
 
-    data << int32(_gossipMenu.GetMenuId());                 // new 2.4.0
+    data << int32(0);                                       // friend faction ID?
 
     data.WriteByteSeq(guid[3]);
     data.WriteByteSeq(guid[1]);
@@ -263,7 +263,7 @@ void PlayerMenu::SendGossipMenu(uint32 titleTextId, uint64 objectGUID) const
 
     data.WriteByteSeq(guid[5]);
 
-    data << int32(0);                                       // friend faction ID?
+    data << int32(_gossipMenu.GetMenuId());                 // new 2.4.0
 
     data.WriteByteSeq(guid[6]);
     data.WriteByteSeq(guid[4]);

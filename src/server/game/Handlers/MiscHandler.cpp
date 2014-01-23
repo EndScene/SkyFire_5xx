@@ -98,32 +98,32 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recvData)
     uint8 boxTextLength = 0;
     std::string code = "";
 
-    recvData >> gossipListId >> menuId;
+    recvData >> menuId >> gossipListId;
 
-    guid[4] = recvData.ReadBit();
-    guid[0] = recvData.ReadBit();
-    guid[6] = recvData.ReadBit();
     guid[3] = recvData.ReadBit();
-    guid[2] = recvData.ReadBit();
-    guid[7] = recvData.ReadBit();
-    guid[1] = recvData.ReadBit();
 
     boxTextLength = recvData.ReadBits(8);
 
+    guid[7] = recvData.ReadBit();
     guid[5] = recvData.ReadBit();
+    guid[6] = recvData.ReadBit();
+    guid[2] = recvData.ReadBit();
+    guid[0] = recvData.ReadBit();
+    guid[4] = recvData.ReadBit();
+    guid[1] = recvData.ReadBit();
 
     recvData.ReadByteSeq(guid[5]);
-    recvData.ReadByteSeq(guid[6]);
-    recvData.ReadByteSeq(guid[3]);
-    recvData.ReadByteSeq(guid[0]);
     recvData.ReadByteSeq(guid[1]);
+    recvData.ReadByteSeq(guid[4]);
+    recvData.ReadByteSeq(guid[6]);
+    recvData.ReadByteSeq(guid[7]);
+    recvData.ReadByteSeq(guid[2]);
+    recvData.ReadByteSeq(guid[0]);
 
     if (_player->PlayerTalkClass->IsGossipOptionCoded(gossipListId))
         code = recvData.ReadString(boxTextLength);
 
-    recvData.ReadByteSeq(guid[2]);
-    recvData.ReadByteSeq(guid[7]);
-    recvData.ReadByteSeq(guid[4]);
+    recvData.ReadByteSeq(guid[3]);
 
     Creature* unit = NULL;
     GameObject* go = NULL;
@@ -1249,25 +1249,24 @@ void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recvData)
 
     recvData >> slotId;
 
+    guid[3] = recvData.ReadBit();
+    guid[5] = recvData.ReadBit();
+    guid[2] = recvData.ReadBit();
+    guid[1] = recvData.ReadBit();
+    guid[0] = recvData.ReadBit();
+    guid[6] = recvData.ReadBit();
     guid[4] = recvData.ReadBit();
     guid[7] = recvData.ReadBit();
-    guid[5] = recvData.ReadBit();
-    guid[6] = recvData.ReadBit();
-    guid[1] = recvData.ReadBit();
-    guid[3] = recvData.ReadBit();
-    guid[0] = recvData.ReadBit();
-    guid[2] = recvData.ReadBit();
 
-    recvData.ReadByteSeq(guid[3]);
     recvData.ReadByteSeq(guid[4]);
-    recvData.ReadByteSeq(guid[6]);
-    recvData.ReadByteSeq(guid[7]);
-    recvData.ReadByteSeq(guid[1]);
-    recvData.ReadByteSeq(guid[2]);
     recvData.ReadByteSeq(guid[0]);
+    recvData.ReadByteSeq(guid[7]);
+    recvData.ReadByteSeq(guid[2]);
+    recvData.ReadByteSeq(guid[1]);
+    recvData.ReadByteSeq(guid[3]);
+    recvData.ReadByteSeq(guid[6]);
     recvData.ReadByteSeq(guid[5]);
 
-	
     ActionButtonPACKET* button = (ActionButtonPACKET*)&guid;
 
     TC_LOG_DEBUG("network", "CMSG_SET_ACTION_BUTTON slotId: %u actionId: %u", slotId, button->id);
@@ -1402,8 +1401,8 @@ void WorldSession::HandlePlayedTime(WorldPacket& recvData)
     recvData >> unk1;                                      // 0 or 1 expected
 
     WorldPacket data(SMSG_PLAYED_TIME, 4 + 4 + 1);
-    data << uint32(_player->GetTotalPlayedTime());
     data << uint32(_player->GetLevelPlayedTime());
+    data << uint32(_player->GetTotalPlayedTime());
     data << uint8(unk1);                                    // 0 - will not show in chat frame
     SendPacket(&data);
 }
@@ -2113,7 +2112,7 @@ void WorldSession::HandleRequestHotfix(WorldPacket& recvPacket)
         return;
     }
 
-    count = recvPacket.ReadBits(23);
+    count = recvPacket.ReadBits(21);
 
     ObjectGuid* guids = new ObjectGuid[count];
     for (uint32 i = 0; i < count; ++i)
@@ -2141,34 +2140,63 @@ void WorldSession::HandleRequestHotfix(WorldPacket& recvPacket)
         recvPacket.ReadByteSeq(guids[i][3]);
         recvPacket >> entry;
 
-        if (!store->HasRecord(entry))
+        switch (type)
         {
-            WorldPacket data(SMSG_DB_REPLY, 4 * 4);
-            data << -int32(entry);
-            data << uint32(time(NULL));
-            data << uint32(0);
-            data << uint32(store->GetHash());
-            SendPacket(&data);
-            TC_LOG_ERROR("network", "SMSG_DB_REPLY: hotfix entry: %u type: %u, has no Record.", entry, (uint32)store->GetHash());
-            continue;
+            case DB2_REPLY_BROADCAST:
+            {
+                SendBroadcastText(entry);
+                break;
+            }
+            default:
+                TC_LOG_ERROR("network", "SMSG_DB_REPLY: Unhandled hotfix type: %u", type);
         }
 
-        WorldPacket data(SMSG_DB_REPLY);
-        data << int32(entry);
-        data << uint32(sObjectMgr->GetHotfixDate(entry, store->GetHash()));
-        
-        size_t sizePos = data.wpos();
-        data << uint32(sizePos);              // size of next block
-        data << uint32(store->GetHash());
-
-        store->WriteRecord(entry, uint32(GetSessionDbcLocale()), data);
-        data.put<uint32>(sizePos, data.wpos() - sizePos - 4);
-
-        SendPacket(&data);
-        TC_LOG_ERROR("network", "SMSG_DB_REPLY: Sent hotfix entry: %u type: %u", entry, (uint32)store->GetHash());
+        //TC_LOG_ERROR("network", "SMSG_DB_REPLY: Sent hotfix entry: %u type: %u", entry, (uint32)store->GetHash());
     }
 
     delete[] guids;
+}
+
+void WorldSession::SendBroadcastText(uint32 entry)
+{
+    /*
+     *  This is a hack fix! Still uses Gossip Id's instead of Broadcast Id's.
+     *  Major database changed required at some point.
+     */
+
+    ByteBuffer buffer;
+    std::string defaultText = "Greetings, $n";
+
+    GossipText const* pGossip = sObjectMgr->GetGossipText(entry);
+
+    uint16 nrmTextLength = pGossip ? pGossip->Options[0].Text_0.length() : defaultText.length();
+    uint16 altTextLength = pGossip ? pGossip->Options[0].Text_1.length() : defaultText.length();
+
+    buffer << uint32(entry);
+    buffer << uint32(pGossip ? pGossip->Options[0].Language : 0);
+    buffer << uint16(nrmTextLength);
+
+    if (nrmTextLength)
+        buffer << std::string(pGossip ? pGossip->Options[0].Text_0 : defaultText);
+
+    buffer << uint16(altTextLength);
+
+    if (altTextLength)
+        buffer << std::string(pGossip ? pGossip->Options[0].Text_1 : defaultText);
+
+    for (int i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; i++)
+        buffer << uint32(0);
+
+    buffer << uint32(1);
+
+    WorldPacket data(SMSG_DB_REPLY);
+    data << uint32(entry);
+    data << uint32(0);
+    data << uint32(buffer.size());
+    data.append(buffer);
+    data << uint32(DB2_REPLY_BROADCAST);
+
+    SendPacket(&data);
 }
 
 void WorldSession::HandleUpdateMissileTrajectory(WorldPacket& recvPacket)
