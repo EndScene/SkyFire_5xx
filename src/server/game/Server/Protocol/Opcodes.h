@@ -77,7 +77,7 @@ enum Opcodes
    CMSG_AUTOSTORE_GROUND_ITEM                               = 0x0,
    CMSG_AUTOSTORE_LOOT_ITEM                                 = 0x0,
    CMSG_AUTO_DECLINE_GUILD_INVITES                          = 0x0,
-   CMSG_BANKER_ACTIVATE                                     = 0x0,
+   CMSG_BANKER_ACTIVATE                                     = 0x02FD, // 5.4.7 18019
    CMSG_BATTLEFIELD_JOIN                                    = 0x0,
    CMSG_BATTLEFIELD_LEAVE                                   = 0x0,
    CMSG_BATTLEFIELD_LIST                                    = 0x0,
@@ -98,7 +98,7 @@ enum Opcodes
    CMSG_BUG                                                 = 0x0,
    CMSG_BUSY_TRADE                                          = 0x0,
    CMSG_BUYBACK_ITEM                                        = 0x0,
-   CMSG_BUY_BANK_SLOT                                       = 0x0,
+   CMSG_BUY_BANK_SLOT                                       = 0x00FE, // 5.4.7 18019
    CMSG_BUY_ITEM                                            = 0x1077, // 5.4.7 18019
    CMSG_CALENDAR_ADD_EVENT                                  = 0x0,
    CMSG_CALENDAR_ARENA_TEAM                                 = 0x0,
@@ -188,7 +188,7 @@ enum Opcodes
    CMSG_DEL_FRIEND                                          = 0x0,
    CMSG_DEL_IGNORE                                          = 0x0,
    CMSG_DEL_VOICE_IGNORE                                    = 0x0,
-   CMSG_DESTROY_ITEM                                        = 0x0,
+   CMSG_DESTROY_ITEM                                        = 0x1F12, // 5.4.7 18019
    CMSG_DISMISS_CONTROLLED_VEHICLE                          = 0x0,
    CMSG_DISMISS_CRITTER                                     = 0x0,
    CMSG_DUEL_ACCEPTED                                       = 0x0,
@@ -229,7 +229,7 @@ enum Opcodes
    CMSG_GROUP_ASSISTANT_LEADER                              = 0x0,
    CMSG_GROUP_CANCEL                                        = 0x0,
    CMSG_GROUP_CHANGE_SUB_GROUP                              = 0x0,
-   CMSG_GROUP_DISBAND                                       = 0x0DB2, // 5.4.7 10819
+   CMSG_GROUP_DISBAND                                       = 0x0DB2, // 5.4.7 18019
    CMSG_GROUP_INVITE                                        = 0x1990, // 5.4.7 18019
    CMSG_GROUP_INVITE_RESPONSE                               = 0x1C51, // 5.4.7 18019
    CMSG_GROUP_RAID_CONVERT                                  = 0x0,
@@ -326,7 +326,7 @@ enum Opcodes
    CMSG_LOOT                                                = 0x0,
    CMSG_LOOT_CURRENCY                                       = 0x0,
    CMSG_LOOT_MASTER_GIVE                                    = 0x0,
-   CMSG_LOOT_METHOD                                         = 0x0,
+   CMSG_LOOT_METHOD                                         = 0x1C10, // 5.4.7 18019
    CMSG_LOOT_MONEY                                          = 0x0,
    CMSG_LOOT_RELEASE                                        = 0x0,
    CMSG_LOOT_ROLL                                           = 0x0,
@@ -454,6 +454,7 @@ enum Opcodes
    CMSG_QUEST_NPC_QUERY                                     = 0x0,
    CMSG_QUEST_POI_QUERY                                     = 0x0,
    CMSG_QUEST_QUERY                                         = 0x0,
+   CMSG_RAID_READY_CHECK                                    = 0x0D88, // 5.4.7 18019
    CMSG_RANDOM_ROLL                                         = 0x1891, // 5.4.7 18019
    CMSG_RANDOMIZE_CHAR_NAME                                 = 0x0,
    CMSG_READY_FOR_ACCOUNT_DATA_TIMES                        = 0x13CB, // 5.4.7 18019
@@ -504,7 +505,7 @@ enum Opcodes
    CMSG_SETDEATHBINDPOINT                                   = 0x0,
    CMSG_SETSHEATHED                                         = 0x0,
    CMSG_SET_ACTIONBAR_TOGGLES                               = 0x0,
-   CMSG_SET_ACTION_BUTTON                                   = 0x0,
+   CMSG_SET_ACTION_BUTTON                                   = 0x1393, // 5.4.7 18019
    CMSG_SET_ACTIVE_MOVER                                    = 0x0,
    CMSG_SET_ACTIVE_VOICE_CHANNEL                            = 0x0,
    CMSG_SET_ALLOW_LOW_LEVEL_RAID1                           = 0x0,
@@ -655,7 +656,6 @@ enum Opcodes
    MSG_PVP_LOG_DATA                                         = 0x0,
    MSG_QUERY_NEXT_MAIL_TIME                                 = 0x0,
    MSG_QUEST_PUSH_RESULT                                    = 0x0,
-   MSG_RAID_READY_CHECK                                     = 0x0,
    MSG_RAID_READY_CHECK_CONFIRM                             = 0x0,
    MSG_RAID_READY_CHECK_FINISHED                            = 0x0,
    MSG_RAID_TARGET_UPDATE                                   = 0x0,
@@ -740,7 +740,7 @@ enum Opcodes
    SMSG_BREAK_TARGET                                        = 0x0,
    SMSG_BUY_BANK_SLOT_RESULT                                = 0x0,
    SMSG_BUY_FAILED                                          = 0x0,
-   SMSG_BUY_ITEM                                            = 0x0,
+   SMSG_BUY_ITEM                                            = 0x0763, // 5.4.7 18019
    SMSG_CALENDAR_ACTION_PENDING                             = 0x0,
    SMSG_CALENDAR_ARENA_TEAM                                 = 0x0,
    SMSG_CALENDAR_CLEAR_PENDING_ACTION                       = 0x0,
@@ -982,7 +982,7 @@ enum Opcodes
    SMSG_ITEM_COOLDOWN                                       = 0x0,
    SMSG_ITEM_ENCHANT_TIME_UPDATE                            = 0x0,
    SMSG_ITEM_EXPIRE_PURCHASE_REFUND                         = 0x0,
-   SMSG_ITEM_PUSH_RESULT                                    = 0x0,
+   SMSG_ITEM_PUSH_RESULT                                    = 0x04A1, // 5.4.7 18019
    SMSG_ITEM_REFUND_INFO_RESPONSE                           = 0x0,
    SMSG_ITEM_REFUND_RESULT                                  = 0x0,
    SMSG_ITEM_REMOVE_PASSIVE                                 = 0x0,
@@ -1204,6 +1204,7 @@ enum Opcodes
    SMSG_RAID_INSTANCE_INFO                                  = 0x0,
    SMSG_RAID_INSTANCE_MESSAGE                               = 0x0,
    SMSG_RAID_MARKERS_CHANGED                                = 0x0,
+   SMSG_RAID_READY_CHECK                                    = 0x072A, // 5.4.7 18019
    SMSG_RAID_READY_CHECK_THROTTLED_ERROR                    = 0x0,
    SMSG_RAID_SUMMON_FAILED                                  = 0x0,
    SMSG_RANDOM_ROLL                                         = 0x0529, // 5.4.7 18019
@@ -1220,7 +1221,7 @@ enum Opcodes
    SMSG_REFER_A_FRIEND_EXPIRED                              = 0x0,
    SMSG_REFER_A_FRIEND_FAILURE                              = 0x0,
    SMSG_REFORGE_RESULT                                      = 0x0,
-   SMSG_REMOVED_SPELL                                       = 0x0,
+   SMSG_REMOVED_SPELL                                       = 0x05E3, // 5.4.7 18019
    SMSG_REPORT_PVP_AFK_RESULT                               = 0x0,
    SMSG_REQUEST_CEMETERY_LIST_RESPONSE                      = 0x0,
    SMSG_REQUEST_PVP_REWARDS_RESPONSE                        = 0x0,

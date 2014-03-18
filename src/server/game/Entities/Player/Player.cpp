@@ -3370,13 +3370,11 @@ void Player::InitStatsForLevel(bool reapplyMods)
         SetFloatValue(PLAYER_FIELD_SPELL_CRIT_PERCENTAGE+i, 0.0f);
 
     SetFloatValue(PLAYER_FIELD_PARRY_PERCENTAGE, 0.0f);
-    SetFloatValue(PLAYER_FIELD_PLAYER_FLAGS, 0.0f);
+    SetFloatValue(PLAYER_FIELD_BLOCK_PERCENTAGE, 0.0f);
+    SetFloatValue(PLAYER_FIELD_DODGE_PERCENTAGE, 0.0f);
 
     // Static 30% damage blocked
     SetUInt32Value(PLAYER_FIELD_SHIELD_BLOCK, 30);
-
-    // Dodge percentage
-    SetFloatValue(PLAYER_FIELD_DODGE_PERCENTAGE, 0.0f);
 
     // set armor (resistance 0) to original value (create_agility*2)
     SetArmor(int32(m_createStats[STAT_AGILITY]*2));
@@ -4589,6 +4587,36 @@ bool Player::ResetTalents(bool noCost, bool resetTalents, bool resetSpecializati
     return true;
 }
 
+bool Player::RemoveTalent(uint32 talentId)
+{
+    TalentEntry const* talent = sTalentStore.LookupEntry(talentId);
+    if (!talent)
+        return false;
+
+    uint32 spellId = talent->SpellId;
+
+    SpellInfo const* unlearnSpellProto = sSpellMgr->GetSpellInfo(spellId);
+
+    removeSpell(spellId, true);
+
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        if (unlearnSpellProto->Effects[i].TriggerSpell > 0 && unlearnSpellProto->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL)
+            removeSpell(unlearnSpellProto->Effects[i].TriggerSpell, true);
+
+    PlayerTalentMap::iterator itr = GetTalentMap(GetActiveSpec())->find(spellId);
+    if (itr != GetTalentMap(GetActiveSpec())->end())
+        itr->second->state = PLAYERSPELL_REMOVED;
+
+    // Needs to be executed orthewise the talents will be screwedsx
+    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    _SaveTalents(trans);
+    _SaveSpells(trans);
+    CharacterDatabase.CommitTransaction(trans);
+
+    SendTalentsInfoData();
+    return true;
+}
+
 Mail* Player::GetMail(uint32 id)
 {
     for (PlayerMails::iterator itr = m_mail.begin(); itr != m_mail.end(); ++itr)
@@ -5798,13 +5826,12 @@ float Player::GetMeleeCritFromAgility()
     if (level > GT_MAX_LEVEL)
         level = GT_MAX_LEVEL;
 
-    GtChanceToMeleeCritBaseEntry const* critBase  = sGtChanceToMeleeCritBaseStore.LookupEntry(pclass-1);
+    GtChanceToMeleeCritBaseEntry const* critBase  = sGtChanceToMeleeCritBaseStore.LookupEntry((pclass-1)*GT_MAX_LEVEL + level-1);
     GtChanceToMeleeCritEntry     const* critRatio = sGtChanceToMeleeCritStore.LookupEntry((pclass-1)*GT_MAX_LEVEL + level-1);
     if (critBase == NULL || critRatio == NULL)
         return 0.0f;
 
-    float crit = critBase->base + GetStat(STAT_AGILITY)*critRatio->ratio;
-    return crit*100.0f;
+    return ((critBase->base * 100.0f) + GetStat(STAT_AGILITY) / critRatio->ratio);
 }
 
 void Player::GetDodgeFromAgility(float &diminishing, float &nondiminishing)
@@ -5868,13 +5895,12 @@ float Player::GetSpellCritFromIntellect()
     if (level > GT_MAX_LEVEL)
         level = GT_MAX_LEVEL;
 
-    GtChanceToSpellCritBaseEntry const* critBase = sGtChanceToSpellCritBaseStore.LookupEntry(pclass - 1);
+    GtChanceToSpellCritBaseEntry const* critBase = sGtChanceToSpellCritBaseStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
     GtChanceToSpellCritEntry const* critRatio = sGtChanceToSpellCritStore.LookupEntry((pclass - 1) * GT_MAX_LEVEL + level - 1);
     if (critBase == NULL || critRatio == NULL)
         return 0.0f;
 
-    float crit = critBase->base + GetStat(STAT_INTELLECT) * critRatio->ratio;
-    return crit * 100.0f;
+    return ((critBase->base * 100.0f) + GetStat(STAT_INTELLECT) / critRatio->ratio);
 }
 
 float Player::GetRatingMultiplier(CombatRating cr) const
@@ -11996,7 +12022,7 @@ InventoryResult Player::CanRollForItemInLFG(ItemTemplate const* proto, WorldObje
     {
         if (_class == CLASS_WARRIOR || _class == CLASS_PALADIN || _class == CLASS_DEATH_KNIGHT)
         {
-            if (getLevel() < 40)
+            if (getLevel() < 50)
             {
                 if (proto->SubClass != ITEM_SUBCLASS_ARMOR_MAIL)
                     return EQUIP_ERR_CLIENT_LOCKED_OUT;
@@ -12006,7 +12032,7 @@ InventoryResult Player::CanRollForItemInLFG(ItemTemplate const* proto, WorldObje
         }
         else if (_class == CLASS_HUNTER || _class == CLASS_SHAMAN)
         {
-            if (getLevel() < 40)
+            if (getLevel() < 50)
             {
                 if (proto->SubClass != ITEM_SUBCLASS_ARMOR_LEATHER)
                     return EQUIP_ERR_CLIENT_LOCKED_OUT;
@@ -12014,6 +12040,16 @@ InventoryResult Player::CanRollForItemInLFG(ItemTemplate const* proto, WorldObje
             else if (proto->SubClass != ITEM_SUBCLASS_ARMOR_MAIL)
                 return EQUIP_ERR_CLIENT_LOCKED_OUT;
         }
+		else if (_class == CLASS_MONK)
+		{
+			if (getLevel() < 50)
+			{
+				if (proto->SubClass != ITEM_SUBCLASS_ARMOR_CLOTH)
+					return EQUIP_ERR_CLIENT_LOCKED_OUT;
+			}
+			else if (proto->SubClass != ITEM_SUBCLASS_LEATHER)
+				return EQUIP_ERR_CLIENT_LOCKED_OUT;
+		}
 
         if (_class == CLASS_ROGUE || _class == CLASS_DRUID)
             if (proto->SubClass != ITEM_SUBCLASS_ARMOR_LEATHER)
@@ -14435,11 +14471,71 @@ void Player::SendItemDurations()
 
 void Player::SendNewItem(Item* item, uint32 count, bool received, bool created, bool broadcast)
 {
-    if (!item)                                               // prevent crash
+    if (!item)                                              // prevent crash
         return;
 
-                                                            // last check 2.0.10
-    WorldPacket data(SMSG_ITEM_PUSH_RESULT, (8+4+4+4+1+4+4+4+4+4));
+    ObjectGuid playerGuid = GetGUID();
+    ObjectGuid unknownGuid = uint64(0);
+
+    WorldPacket data(SMSG_ITEM_PUSH_RESULT, 1 + 8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 1 + 4 + 4 + 4);
+    data.WriteBit(1);                                       // display in chat
+    data.WriteBit(created);                                 // 0=received, 1=created
+    data.WriteBit(playerGuid[2]);
+    data.WriteBit(playerGuid[0]);
+    data.WriteBit(playerGuid[4]);
+    data.WriteBit(unknownGuid[3]);
+    data.WriteBit(unknownGuid[7]);
+    data.WriteBit(unknownGuid[1]);
+    data.WriteBit(unknownGuid[4]);
+    data.WriteBit(unknownGuid[6]);
+    data.WriteBit(0);                                       // 1 = bonus item - "You received bonus loot"
+    data.WriteBit(playerGuid[5]);
+    data.WriteBit(playerGuid[1]);
+    data.WriteBit(unknownGuid[5]);
+    data.WriteBit(playerGuid[6]);
+    data.WriteBit(unknownGuid[2]);
+    data.WriteBit(playerGuid[7]);
+    data.WriteBit(unknownGuid[0]);
+    data.WriteBit(playerGuid[3]);
+    data.WriteBit(received);                                // 0=looted, 1=from npc
+    data.FlushBits();
+
+    // uint32 value order needs to be rechecked
+    data.WriteByteSeq(unknownGuid[6]);
+    data << uint32(item->GetItemSuffixFactor());            // SuffixFactor
+    data.WriteByteSeq(playerGuid[1]);
+    data << uint32(0);
+    data << uint32(count);                                  // count of items
+    data << uint32(0);
+    data << uint32(item->GetItemRandomPropertyId());        // random item property id
+    data.WriteByteSeq(playerGuid[3]);
+    data.WriteByteSeq(unknownGuid[7]);
+    data.WriteByteSeq(playerGuid[5]);
+    data << uint32(0);
+    data.WriteByteSeq(playerGuid[2]);
+    data.WriteByteSeq(unknownGuid[0]);
+    data.WriteByteSeq(unknownGuid[1]);
+    data.WriteByteSeq(playerGuid[7]);
+    data << uint8(item->GetBagSlot());                      // bagslot
+    data << uint32(item->GetEntry());                       // item id
+    data << uint32(0);
+    data.WriteByteSeq(playerGuid[0]);
+    data.WriteByteSeq(playerGuid[4]);
+    data.WriteByteSeq(unknownGuid[5]);
+    data.WriteByteSeq(unknownGuid[2]);
+    data << uint32(GetItemCount(item->GetEntry()));         // count of items in inventory
+                                                            // item slot, but when added to stack: 0xFFFFFFFF
+    data << uint32((item->GetCount() == count) ? item->GetSlot() : -1);
+    data.WriteByteSeq(playerGuid[6]);
+    data.WriteByteSeq(unknownGuid[3]);
+    data.WriteByteSeq(unknownGuid[4]);
+
+    if (broadcast && GetGroup())
+        GetGroup()->BroadcastPacket(&data, true);
+    else
+        GetSession()->SendPacket(&data);
+
+    /*WorldPacket data(SMSG_ITEM_PUSH_RESULT, (8+4+4+4+1+4+4+4+4+4));
     data << uint64(GetGUID());                              // player GUID
     data << uint32(received);                               // 0=looted, 1=from npc
     data << uint32(created);                                // 0=received, 1=created
@@ -14451,12 +14547,7 @@ void Player::SendNewItem(Item* item, uint32 count, bool received, bool created, 
     data << uint32(item->GetItemSuffixFactor());            // SuffixFactor
     data << int32(item->GetItemRandomPropertyId());         // random item property id
     data << uint32(count);                                  // count of items
-    data << uint32(GetItemCount(item->GetEntry()));         // count of items in inventory
-
-    if (broadcast && GetGroup())
-        GetGroup()->BroadcastPacket(&data, true);
-    else
-        GetSession()->SendPacket(&data);
+    data << uint32(GetItemCount(item->GetEntry()));         // count of items in inventory*/
 }
 
 /*********************************************************/
@@ -17795,14 +17886,6 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
     _LoadEquipmentSets(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_EQUIPMENT_SETS));
 
     _LoadCUFProfiles(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CUF_PROFILES));
-
-    std::list<uint32> learnList = GetSpellsForLevels(getClass(), getRaceMask(), GetTalentSpecialization(GetActiveSpec()), 0, getLevel());
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (!HasSpell(*iter))
-            learnSpell(*iter, true);
-    }
-
     return true;
 }
 
@@ -18722,6 +18805,13 @@ void Player::_LoadSpells(PreparedQueryResult result)
         do
             addSpell((*result)[0].GetUInt32(), (*result)[1].GetBool(), false, false, (*result)[2].GetBool(), true);
         while (result->NextRow());
+    }
+
+    std::list<uint32> learnList = GetSpellsForLevels(getClass(), getRaceMask(), GetTalentSpecialization(GetActiveSpec()), 0, getLevel());
+    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
+    {
+        if (!HasSpell(*iter))
+            learnSpell(*iter, true);
     }
 }
 
@@ -20241,7 +20331,7 @@ void Player::outDebugValues() const
     TC_LOG_DEBUG("entities.unit", "AGILITY is: \t\t%f\t\tSTRENGTH is: \t\t%f", GetStat(STAT_AGILITY), GetStat(STAT_STRENGTH));
     TC_LOG_DEBUG("entities.unit", "INTELLECT is: \t\t%f\t\tSPIRIT is: \t\t%f", GetStat(STAT_INTELLECT), GetStat(STAT_SPIRIT));
     TC_LOG_DEBUG("entities.unit", "STAMINA is: \t\t%f", GetStat(STAT_STAMINA));
-    TC_LOG_DEBUG("entities.unit", "Armor is: \t\t%u\t\tBlock is: \t\t%f", GetArmor(), GetFloatValue(PLAYER_FIELD_PLAYER_FLAGS));
+    TC_LOG_DEBUG("entities.unit", "Armor is: \t\t%u\t\tBlock is: \t\t%f", GetArmor(), GetFloatValue(PLAYER_FIELD_BLOCK_PERCENTAGE));
     TC_LOG_DEBUG("entities.unit", "HolyRes is: \t\t%u\t\tFireRes is: \t\t%u", GetResistance(SPELL_SCHOOL_HOLY), GetResistance(SPELL_SCHOOL_FIRE));
     TC_LOG_DEBUG("entities.unit", "NatureRes is: \t\t%u\t\tFrostRes is: \t\t%u", GetResistance(SPELL_SCHOOL_NATURE), GetResistance(SPELL_SCHOOL_FROST));
     TC_LOG_DEBUG("entities.unit", "ShadowRes is: \t\t%u\t\tArcaneRes is: \t\t%u", GetResistance(SPELL_SCHOOL_SHADOW), GetResistance(SPELL_SCHOOL_ARCANE));
@@ -21896,12 +21986,30 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
     if (it)
     {
         uint32 new_count = pVendor->UpdateVendorItemCurrentCount(crItem, count);
+        ObjectGuid vGuid = pVendor->GetGUID();
 
-        WorldPacket data(SMSG_BUY_ITEM, (8+4+4+4));
-        data << uint64(pVendor->GetGUID());
+        WorldPacket data(SMSG_BUY_ITEM, 1 + 8 + 4 + 4 + 4);
+        data.WriteBit(vGuid[7]);
+        data.WriteBit(vGuid[0]);
+        data.WriteBit(vGuid[6]);
+        data.WriteBit(vGuid[1]);
+        data.WriteBit(vGuid[5]);
+        data.WriteBit(vGuid[2]);
+        data.WriteBit(vGuid[4]);
+        data.WriteBit(vGuid[3]);
+
+        data.WriteByteSeq(vGuid[1]);
+        data.WriteByteSeq(vGuid[5]);
+        data.WriteByteSeq(vGuid[2]);
+        data.WriteByteSeq(vGuid[3]);
         data << uint32(vendorslot + 1);                   // numbered from 1 at client
-        data << int32(crItem->maxcount > 0 ? new_count : 0xFFFFFFFF);
+        data.WriteByteSeq(vGuid[0]);
+        data.WriteByteSeq(vGuid[6]);
         data << uint32(count);
+        data.WriteByteSeq(vGuid[7]);
+        data << int32(crItem->maxcount > 0 ? new_count : 0xFFFFFFFF);
+        data.WriteByteSeq(vGuid[4]);
+
         GetSession()->SendPacket(&data);
         SendNewItem(it, count, true, false, false);
 
@@ -25147,9 +25255,11 @@ void Player::InitGlyphsForLevel()
     uint32 slotMask = 0;
 
     if (level >= 25)
-        slotMask |= 0x01 | 0x02 | 0x40;
+        slotMask |= 0x01 | 0x02;
     if (level >= 50)
-        slotMask |= 0x04 | 0x08 | 0x80;
+        slotMask |= 0x04 | 0x08;
+    if (level >= 75)
+        slotMask |= 0x10 | 0x20;
 
     SetUInt32Value(PLAYER_FIELD_GLYPH_SLOTS_ENABLED, slotMask);
 }

@@ -278,7 +278,7 @@ void WorldSession::HandleDestroyItemOpcode(WorldPacket& recvData)
     int8 bag, slot;
 
     recvData >> count;
-    recvData >> bag >> slot;
+    recvData >> slot >> bag;
     //TC_LOG_DEBUG("STORAGE: receive bag = %u, slot = %u, count = %u", bag, slot, count);
 
     uint16 pos = (bag << 8) | slot;
@@ -920,24 +920,23 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvData)
 
     ObjectGuid guid;
 
+    guid[7] = recvData.ReadBit();
     guid[2] = recvData.ReadBit();
     guid[3] = recvData.ReadBit();
-    guid[7] = recvData.ReadBit();
-    guid[0] = recvData.ReadBit();
-    guid[4] = recvData.ReadBit();
-    guid[6] = recvData.ReadBit();
-    guid[5] = recvData.ReadBit();
     guid[1] = recvData.ReadBit();
+    guid[5] = recvData.ReadBit();
+    guid[4] = recvData.ReadBit();
+    guid[0] = recvData.ReadBit();
+    guid[6] = recvData.ReadBit();
 
-    recvData.ReadByteSeq(guid[6]);
-    recvData.ReadByteSeq(guid[5]);
-    recvData.ReadByteSeq(guid[3]);
     recvData.ReadByteSeq(guid[7]);
     recvData.ReadByteSeq(guid[0]);
+    recvData.ReadByteSeq(guid[3]);
     recvData.ReadByteSeq(guid[1]);
-    recvData.ReadByteSeq(guid[4]);
+    recvData.ReadByteSeq(guid[6]);
     recvData.ReadByteSeq(guid[2]);
-
+    recvData.ReadByteSeq(guid[4]);
+    recvData.ReadByteSeq(guid[5]);
 
     // cheating protection
     /* not critical if "cheated", and check skip allow by slots in bank windows open by .bank command.

@@ -1,15 +1,13 @@
 ## To-do list (Try to keep the order by importance)
-* Glyphs
 * Groups (Parties / Raids)
 * Mounts / Pets
-* Bank
+* Bank/GuildBank - Assigned to AriDEV *.*
 * Guilds
 * Reputations
 * XP Related Stuff
 * Loot
 * Quests
 * Update ingame damage / stats calculation, (including newest formulas from paper doll)
-* Properly finish living part of object update
 * Implement dynamic update fieldss
 * Implement PvP Power / Update resil
 * Battlegrounds
@@ -29,6 +27,7 @@
 * Guild Finder
 * Raid Finder
 * Implement char boost
+* Professions
 
 ## Finished Stuff
 * Auth
@@ -48,3 +47,5 @@
 * Spell casting / casting results
 * Auras
 * Creature / Gameobject gossips (including vendors and trainers)
+* Glyphs
+* Properly finish living part of object update
