@@ -1456,29 +1456,17 @@ uint32 Unit::CalcArmorReducedDamage(Unit* victim, const uint32 damage, SpellInfo
             armor = floor(AddPct(armor, -(*j)->GetAmount()));
     }
 
-    // Apply Player CR_ARMOR_PENETRATION rating
-    if (GetTypeId() == TYPEID_PLAYER)
-    {
-        float maxArmorPen = 0;
-        if (victim->getLevel() < 60)
-            maxArmorPen = float(400 + 85 * victim->getLevel());
-        else
-            maxArmorPen = 400 + 85 * victim->getLevel() + 4.5f * 85 * (victim->getLevel() - 59);
-
-        // Cap armor penetration to this number
-        maxArmorPen = std::min((armor + maxArmorPen) / 3, armor);
-        // Figure out how much armor do we ignore
-        float armorPen = CalculatePct(maxArmorPen, ToPlayer()->GetRatingBonusValue(CR_ARMOR_PENETRATION));
-        // Got the value, apply it
-        armor -= std::min(armorPen, maxArmorPen);
-    }
-
     if (armor < 0.0f)
         armor = 0.0f;
 
     float levelModifier = getLevel();
-    if (levelModifier > 59)
-        levelModifier = levelModifier + 4.5f * (levelModifier - 59);
+
+    if (levelModifier > 85)
+        levelModifier = levelModifier + (4.5 * (levelModifier - 59)) + (20 * (levelModifier - 80)) + (22 * (levelModifier - 85));
+    else if (levelModifier > 80)
+        levelModifier = levelModifier + (4.5 * (levelModifier - 59)) + (20 * (levelModifier - 80));
+    else if (levelModifier > 59)
+        levelModifier = levelModifier + (4.5 * (levelModifier - 59));
 
     float tmpvalue = 0.1f * armor / (8.5f * levelModifier + 40);
     tmpvalue = tmpvalue / (1.0f + tmpvalue);
@@ -2106,7 +2094,7 @@ float Unit::CalculateLevelPenalty(SpellInfo const* spellProto) const
 void Unit::SendMeleeAttackStart(Unit* victim)
 {
     WorldPacket data(SMSG_ATTACKSTART, 8 + 8);
- 
+
     ObjectGuid attackerGuid = victim->GetGUID();
     ObjectGuid victimGuid = GetGUID();
 
@@ -4799,7 +4787,7 @@ void Unit::SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log)
     data.WriteBit(attackerGuid[5]);
 
     data.FlushBits();
-    
+
     data.WriteByteSeq(targetGuid[7]);
     data.WriteByteSeq(targetGuid[6]);
     data.WriteByteSeq(attackerGuid[5]);
@@ -8586,7 +8574,7 @@ void Unit::SendHealSpellLog(Unit* victim, uint32 SpellID, uint32 Damage, uint32 
     data.WriteBit(0);
     data.WriteBit(victimGuid[7]);
     data.WriteBit(casterGuid[4]);
-    
+
     data.WriteByteSeq(casterGuid[5]);
     data.WriteByteSeq(victimGuid[7]);
     data.WriteByteSeq(casterGuid[2]);

@@ -1501,7 +1501,7 @@ struct MapEntry
     //char*       internalname;                             // 1 unused
     uint32  map_type;                                       // 2
     //uint32 flags;                                         // 3
-    //uint32 isPvp;                                         // 4  
+    //uint32 isPvp;                                         // 4
     char* name;                                             // 5        m_MapName_lang
     uint32  linked_zone;                                    // 6        m_areaTableID
     //char*     hordeIntro;                                 // 7        m_MapDescription0_lang
@@ -1880,21 +1880,22 @@ struct SpellMiscEntry
     uint32    AttributesEx3;                                // 6        m_attributesExC
     uint32    AttributesEx4;                                // 7        m_attributesExD
     uint32    AttributesEx5;                                // 8        m_attributesExE
-    uint32    AttributesEx6;                                // 9       m_attributesExF
+    uint32    AttributesEx6;                                // 9        m_attributesExF
     uint32    AttributesEx7;                                // 10       m_attributesExG
     uint32    AttributesEx8;                                // 11       m_attributesExH
     uint32    AttributesEx9;                                // 12       m_attributesExI
     uint32    AttributesEx10;                               // 13       m_attributesExJ
     uint32    AttributesEx11;                               // 14       m_attributesExK
     uint32    AttributesEx12;                               // 15       m_attributesExL
-    uint32    CastingTimeIndex;                             // 16       m_castingTimeIndex
-    uint32    DurationIndex;                                // 17       m_durationIndex
-    uint32    rangeIndex;                                   // 18       m_rangeIndex
-    float     speed;                                        // 19       m_speed
-    uint32    SpellVisual[2];                               // 20-21    m_spellVisualID
-    uint32    SpellIconID;                                  // 22       m_spellIconID
-    uint32    activeIconID;                                 // 23       m_activeIconID
-    uint32    SchoolMask;                                   // 24       m_schoolMask
+    uint32    AttributesEx13;                               // 16       m_attributesExM
+    uint32    CastingTimeIndex;                             // 17       m_castingTimeIndex
+    uint32    DurationIndex;                                // 18       m_durationIndex
+    uint32    rangeIndex;                                   // 19       m_rangeIndex
+    float     speed;                                        // 20       m_speed
+    uint32    SpellVisual[2];                               // 21-22    m_spellVisualID
+    uint32    SpellIconID;                                  // 23       m_spellIconID
+    uint32    activeIconID;                                 // 24       m_activeIconID
+    uint32    SchoolMask;                                   // 25       m_schoolMask
 };
 
 // SpellEffectScaling.dbc
@@ -2105,7 +2106,7 @@ struct SpellTargetRestrictionsEntry
     uint32    Id;                                           // 0        m_ID
     //uint32  spellId;                                      // 1  - Pandaria
     //uint32  unk0;                                         // 2  - Pandaria always after spellId
-    //float  unk0;                                          // 3  
+    //float  unk0;                                          // 3
     //uint32  unk0;                                         // 4  - Pandaria always  after spellId
     uint32    MaxAffectedTargets;                           // 5        m_maxTargets
     uint32    MaxTargetLevel;                               // 6        m_maxTargetLevel

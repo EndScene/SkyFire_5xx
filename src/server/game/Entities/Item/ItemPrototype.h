@@ -255,7 +255,7 @@ enum SocketColor
     SOCKET_COLOR_RED                            = 2,
     SOCKET_COLOR_YELLOW                         = 4,
     SOCKET_COLOR_BLUE                           = 8,
-    SOCKET_COLOR_HYDRAULIC                      = 16, // not used
+    SOCKET_COLOR_HYDRAULIC                      = 16, // SHA SOKETS
     SOCKET_COLOR_COGWHEEL                       = 32,
 };
 
@@ -546,7 +546,7 @@ enum ItemSubclassGlyph
     ITEM_SUBCLASS_GLYPH_SHAMAN                  = 7,
     ITEM_SUBCLASS_GLYPH_MAGE                    = 8,
     ITEM_SUBCLASS_GLYPH_WARLOCK                 = 9,
-    ITEM_SUBCLASS_GLYPH_MONK					               = 10,
+    ITEM_SUBCLASS_GLYPH_MONK                    = 10,
     ITEM_SUBCLASS_GLYPH_DRUID                   = 11
 };
 

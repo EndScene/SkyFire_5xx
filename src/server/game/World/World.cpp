@@ -283,6 +283,7 @@ void World::AddSession_(WorldSession* s)
     s->SendAddonsInfo();
     s->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
     s->SendTutorialsData();
+    s->SendTimezoneInformation();
 
     UpdateMaxSessionCounters();
 
@@ -380,6 +381,7 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
         pop_sess->SendClientCacheVersion(sWorld->getIntConfig(CONFIG_CLIENTCACHE_VERSION));
         pop_sess->SendAccountDataTimes(GLOBAL_CACHE_MASK);
         pop_sess->SendTutorialsData();
+        pop_sess->SendTimezoneInformation();
 
         m_QueuedPlayer.pop_front();
 
@@ -1929,9 +1931,8 @@ void World::LoadAutobroadcasts()
     m_Autobroadcasts.clear();
     m_AutobroadcastsWeights.clear();
 
-    uint32 realmId = sConfigMgr->GetIntDefault("RealmID", 0);
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_AUTOBROADCAST);
-    stmt->setInt32(0, realmId);
+    stmt->setInt32(0, realmID);
     PreparedQueryResult result = LoginDatabase.Query(stmt);
 
     if (!result)

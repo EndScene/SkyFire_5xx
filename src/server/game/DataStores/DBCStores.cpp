@@ -224,7 +224,9 @@ DBCStorage <SummonPropertiesEntry> sSummonPropertiesStore(SummonPropertiesfmt);
 DBCStorage <TalentEntry> sTalentStore(TalentEntryfmt);
 TalentSpellPosMap sTalentSpellPosMap;
 typedef std::map<uint32, std::vector<uint32> > SpecializationSpellsMap;
+
 SpecializationSpellsMap sSpecializationSpellsMap;
+SpecializationOverrideSpellsMap sSpecializationOverrideSpellMap;
 
 // store absolute bit position for first rank for talent inspect
 static uint32 sSpecializationClassStore[MAX_CLASSES][4];
@@ -716,8 +718,15 @@ void LoadDBCStores(const std::string& dataPath)
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sSpecializationSpellsStore, dbcPath, "SpecializationSpells.dbc");
     for (uint32 j = 0; j < sSpecializationSpellsStore.GetNumRows(); j++)
+    {
         if (SpecializationSpellsEntry const* specializationSpells = sSpecializationSpellsStore.LookupEntry(j))
+        {
             sSpecializationSpellsMap[specializationSpells->SpecializationId].push_back(specializationSpells->SpellId);
+
+            if (specializationSpells->RemovesSpellId)
+                sSpecializationOverrideSpellMap[specializationSpells->RemovesSpellId] = specializationSpells->SpellId;
+        }
+    }
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sTaxiNodesStore,              dbcPath, "TaxiNodes.dbc");//15595
     LoadDBC(availableDbcLocales, bad_dbc_files, sTaxiPathStore,               dbcPath, "TaxiPath.dbc");//15595
@@ -858,11 +867,11 @@ void LoadDBCStores(const std::string& dataPath)
     }
 
     // Check loaded DBC files proper version
-    if (!sAreaStore.LookupEntry(5491)          ||     // last area (areaflag) added in 5.4.7 (18019)
-        !sCharTitlesStore.LookupEntry(389)     ||     // last char title added in 5.4.7 (18019)
-        !sGemPropertiesStore.LookupEntry(2467) ||     // last gem property added in 5.4.7 (18019)
-        !sMapStore.LookupEntry(1173)           ||     // last map added in 5.4.7 (18019)
-        !sSpellStore.LookupEntry(155748)       )      // last spell added in 5.4.7 (18019)
+    if (!sAreaStore.LookupEntry(5491)          ||     // last area (areaflag) added in 5.4.8 (18291)
+        !sCharTitlesStore.LookupEntry(389)     ||     // last char title added in 5.4.8 (18291)
+        !sGemPropertiesStore.LookupEntry(2467) ||     // last gem property added in 5.4.8 (18291)
+        !sMapStore.LookupEntry(1173)           ||     // last map added in 5.4.8 (18291)
+        !sSpellStore.LookupEntry(163227)       )      // last spell added in 5.4.8 (18291)
     {
         TC_LOG_ERROR("misc", "You have _outdated_ DBC files. Please extract correct dbc files from client 5.4.7 18019.");
         exit(1);
@@ -1138,7 +1147,7 @@ std::list<uint32> GetSpellsForLevels(uint32 classId, uint32 raceMask, uint32 spe
 
             if (spellInfo->SpellLevel <= minLevel || spellInfo->SpellLevel > maxLevel)
                 continue;
-            
+
             spellList.push_back(spellInfo->Id);
         }
     }

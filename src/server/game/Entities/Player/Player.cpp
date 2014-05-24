@@ -1021,7 +1021,7 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
     SetUInt32Value(PLAYER_FIELD_GUILD_RANK_ID, 0);
     SetGuildLevel(0);
     SetUInt32Value(PLAYER_FIELD_GUILD_DELETE_DATE, 0);
-    SetUInt32Value(PLAYER_FIELD_VIRTUAL_PLAYER_REALM, sConfigMgr->GetIntDefault("RealmID", 0));
+    SetUInt32Value(PLAYER_FIELD_VIRTUAL_PLAYER_REALM, realmID);
 
     for (int i = 0; i < KNOWN_TITLES_SIZE; ++i)
         SetUInt64Value(PLAYER_FIELD_KNOWN_TITLES + i, 0);  // 0=disabled
@@ -1984,57 +1984,49 @@ bool Player::BuildEnumData(PreparedQueryResult result, ByteBuffer* dataBuffer, B
     }
 
     // Packet content flags
+
     bitBuffer->WriteBit(guildGuid[4]);
     bitBuffer->WriteBit(guid[0]);
-    bitBuffer->WriteBit(guid[3]);
-    bitBuffer->WriteBit(guid[6]);
-    bitBuffer->WriteBit(guildGuid[1]);
-    bitBuffer->WriteBit(guid[1]);
-    bitBuffer->WriteBit(guildGuid[2]);
     bitBuffer->WriteBit(guildGuid[3]);
-    bitBuffer->WriteBit(atLoginFlags & AT_LOGIN_FIRST);
-    bitBuffer->WriteBit(guid[2]);
-    bitBuffer->WriteBit(guildGuid[0]);
-    bitBuffer->WriteBit(guildGuid[7]);
-    bitBuffer->WriteBits(uint32(name.length()), 6);
-    bitBuffer->WriteBit(0); // Has Been boosted to level 90
-    bitBuffer->WriteBit(guildGuid[6]);
-    bitBuffer->WriteBit(guid[4]);
-    bitBuffer->WriteBit(guildGuid[5]);
-    bitBuffer->WriteBit(guid[5]);
+    bitBuffer->WriteBit(guid[3]);
     bitBuffer->WriteBit(guid[7]);
+    bitBuffer->WriteBit(0); // Can boost ?
+    bitBuffer->WriteBit(atLoginFlags & AT_LOGIN_FIRST);
+    bitBuffer->WriteBit(guid[6]);
+    bitBuffer->WriteBit(guildGuid[6]);
+    bitBuffer->WriteBits(uint32(name.length()), 6);
+    bitBuffer->WriteBit(guid[1]);
+    bitBuffer->WriteBit(guildGuid[1]);
+    bitBuffer->WriteBit(guildGuid[0]);
+    bitBuffer->WriteBit(guid[4]);
+    bitBuffer->WriteBit(guildGuid[7]);
+    bitBuffer->WriteBit(guid[2]);
+    bitBuffer->WriteBit(guid[5]);
+    bitBuffer->WriteBit(guildGuid[2]);
+    bitBuffer->WriteBit(guildGuid[5]);
 
     // Character data
-    *dataBuffer << uint8(face);                                 // Face
+    *dataBuffer << uint32(0);                                   // UNK02 - might be swaped with UNK03
 
-    dataBuffer->WriteByteSeq(guildGuid[7]);
+    dataBuffer->WriteByteSeq(guid[1]);
 
-    *dataBuffer << uint8(playerRace);                           // Race
-
-    dataBuffer->WriteByteSeq(guid[5]);
-    dataBuffer->WriteByteSeq(guildGuid[2]);
-    dataBuffer->WriteByteSeq(guid[6]);
-   
-    *dataBuffer << uint32(charFlags);                           // Character flags
-    *dataBuffer << uint32(zone);                                // Zone id
-    
-    dataBuffer->WriteByteSeq(guildGuid[3]);
-    
-    *dataBuffer << uint32(petLevel);                            // Pet level
-    *dataBuffer << uint32(petDisplayId);                        // Pet DisplayID
-    *dataBuffer << uint32(0);                                   // UNK00 new field - Boost field
-    *dataBuffer << uint32(0);                                   // UNK02 - might be swaped with UNK03 and the pet fields 
-    
-    dataBuffer->WriteByteSeq(guid[3]);
-    dataBuffer->WriteByteSeq(guid[0]);
-
-    *dataBuffer << uint8(facialHair);                           // Facial hair
-    *dataBuffer << uint8(gender);                               // Gender
-    
-    dataBuffer->WriteByteSeq(guildGuid[0]);
-    
+    *dataBuffer << uint8(slot);                                 // List order
     *dataBuffer << uint8(hairStyle);                            // Hair style
-    *dataBuffer << uint8(level);                                // Level
+
+    dataBuffer->WriteByteSeq(guildGuid[2]);
+    dataBuffer->WriteByteSeq(guildGuid[0]);
+    dataBuffer->WriteByteSeq(guildGuid[6]);
+
+    dataBuffer->append(name.c_str(), name.length());            // Name
+
+    dataBuffer->WriteByteSeq(guildGuid[3]);
+
+    *dataBuffer << float(x);                                    // X
+    *dataBuffer << uint32(0);                                   // UNK00 new field - Boost fieldand the pet fields
+    *dataBuffer << uint8(face);                                 // Face
+    *dataBuffer << uint8(playerClass);                          // Class
+
+    dataBuffer->WriteByteSeq(guildGuid[5]);
 
     for (uint8 slot = 0; slot < INVENTORY_SLOT_BAG_END; ++slot)
     {
@@ -2063,42 +2055,53 @@ bool Player::BuildEnumData(PreparedQueryResult result, ByteBuffer* dataBuffer, B
             if (enchant)
                 break;
         }
-        
-        *dataBuffer << uint32(proto->DisplayInfoID);
+
         *dataBuffer << uint32(enchant ? enchant->aura_id : 0);
         *dataBuffer << uint8(proto->InventoryType);
+        *dataBuffer << uint32(proto->DisplayInfoID);
     }
 
-    
-    *dataBuffer << float(z);                                    // Z
-    
+    *dataBuffer << uint32(customizationFlag);                   // Character customization flags
+
+    dataBuffer->WriteByteSeq(guid[3]);
+    dataBuffer->WriteByteSeq(guid[5]);
+
+    *dataBuffer << uint32(petFamily);                           // Pet family
+
+    dataBuffer->WriteByteSeq(guildGuid[4]);
+
+    *dataBuffer << uint32(mapId);                               // Map Id
+    *dataBuffer << uint8(playerRace);                           // Race
+    *dataBuffer << uint8(skin);                                 // Skin
+
     dataBuffer->WriteByteSeq(guildGuid[1]);
 
-    *dataBuffer << float(y);                                    // Y
-    *dataBuffer << uint8(skin);                                 // Skin
-    *dataBuffer << uint8(slot);                                 // List order
-    
-    dataBuffer->WriteByteSeq(guildGuid[5]);
-    dataBuffer->WriteByteSeq(guid[1]);
-    
-    *dataBuffer << uint32(0);                                   // UNK03 - might be swaped with UNK02 and the pet fields 
-    *dataBuffer << float(x);                                    // X
-    dataBuffer->append(name.c_str(), name.length());            // Name
-    
-    *dataBuffer << uint32(mapId);                               // Map Id
-    *dataBuffer << uint32(petFamily);                           // Pet family
-    
-    *dataBuffer << uint8(hairColor);                            // Hair color
-    *dataBuffer << uint8(playerClass);                             // Class
-    
-    dataBuffer->WriteByteSeq(guildGuid[4]);
+    *dataBuffer << uint8(level);                                // Level
+
+    dataBuffer->WriteByteSeq(guid[0]);
     dataBuffer->WriteByteSeq(guid[2]);
-    
-    *dataBuffer << uint32(customizationFlag);                   // Character customization flags
-    
-    dataBuffer->WriteByteSeq(guid[7]);
-    dataBuffer->WriteByteSeq(guildGuid[6]);
+
+    *dataBuffer << uint8(hairColor);                            // Hair color
+    *dataBuffer << uint8(gender);                               // Gender
+    *dataBuffer << uint8(facialHair);                           // Facial hair
+
+    *dataBuffer << uint32(petLevel);                            // Pet level
+
     dataBuffer->WriteByteSeq(guid[4]);
+    dataBuffer->WriteByteSeq(guid[7]);
+
+    *dataBuffer << float(y);                                    // Y
+    *dataBuffer << uint32(petDisplayId);                        // Pet DisplayID
+    *dataBuffer << uint32(0);                                   // UNK03 - might be swaped with UNK02 and the pet fields
+
+    dataBuffer->WriteByteSeq(guid[6]);
+
+    *dataBuffer << uint32(charFlags);                           // Character flags
+
+    dataBuffer->WriteByteSeq(guildGuid[7]);
+
+    *dataBuffer << uint32(zone);                                // Zone id
+    *dataBuffer << float(z);                                    // Z
 
     return true;
 }
@@ -2325,7 +2328,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             if (!GetSession()->PlayerLogout())
             {
                 // send transfer packets
-                WorldPacket data(SMSG_TRANSFER_PENDING, 4 + 4 + 4);              
+                WorldPacket data(SMSG_TRANSFER_PENDING, 4 + 4 + 4);
                 data << uint32(mapid);
 
                 data.WriteBit(0);       // unknown
@@ -2648,7 +2651,7 @@ void Player::Regenerate(Powers power)
                 float ChiRate = sWorld->getRate(RATE_POWER_CHI);
                 addvalue = 20 * ChiRate;
                 break;
-            } 
+            }
         case POWER_HEALTH:
             return;
         default:
@@ -3047,7 +3050,7 @@ void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool re
     ObjectGuid guid = victim ? victim->GetGUID() : 0;
 
     WorldPacket data(SMSG_LOG_XPGAIN, 1 + 1 + 8 + 4 + 4 + 4 + 1);
-    data.WriteBit(0);                                       // has XP + bonus
+    data.WriteBit(0);                                       // has XP
     data.WriteBit(guid[6]);
     data.WriteBit(guid[3]);
     data.WriteBit(0);                                       // has group bonus
@@ -3064,17 +3067,12 @@ void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool re
     data.WriteByteSeq(guid[3]);
     data.WriteByteSeq(guid[5]);
     data.WriteByteSeq(guid[2]);
-
     data << float(1);                                       // 1 - none 0 - 100% group bonus output
-
     data.WriteByteSeq(guid[4]);
     data.WriteByteSeq(guid[6]);
-
-    data << uint32(GivenXP + BonusXP);                      // given experience
     data << uint32(GivenXP);                                // experience without bonus
-
+    data << uint32(GivenXP + BonusXP);                      // given experience
     data.WriteByteSeq(guid[0]);
-
     data << uint8(recruitAFriend ? 1 : 0);                  // does the GivenXP include a RaF bonus?
 
     GetSession()->SendPacket(&data);
@@ -3651,7 +3649,7 @@ bool Player::AddTalent(uint32 spellId, uint8 spec, bool learning)
             return true;
         }
     }
-    else 
+    else
         itr->second->state = PLAYERSPELL_UNCHANGED;
 
     return false;
@@ -4495,7 +4493,7 @@ bool Player::ResetTalents(bool noCost, bool resetTalents, bool resetSpecializati
         return false;
 
     sScriptMgr->OnPlayerTalentsReset(this, noCost);
-    
+
     // not need after this call
     if (HasAtLoginFlag(AT_LOGIN_RESET_TALENTS))
         RemoveAtLoginFlag(AT_LOGIN_RESET_TALENTS, true);
@@ -5839,17 +5837,17 @@ void Player::GetDodgeFromAgility(float &diminishing, float &nondiminishing)
     // Table for base dodge values
     const float dodge_base[MAX_CLASSES] =
     {
-         0.037580f, // Warrior
-         0.036520f, // Paladin
-        -0.054500f, // Hunter
-        -0.005900f, // Rogue
-         0.031830f, // Priest
-         0.036640f, // DK
-         0.016750f, // Shaman
-         0.034575f, // Mage
-         0.020350f, // Warlock
-         0.0f,      // ??
-         0.049510f  // Druid
+         3.7580f, // Warrior
+         3.6520f, // Paladin
+        -5.4500f, // Hunter
+        -0.5900f, // Rogue
+         3.1830f, // Priest
+         3.6640f, // DK
+         1.6750f, // Shaman
+         3.4575f, // Mage
+         2.0350f, // Warlock
+         5.6097f, // Monk
+         4.9510f  // Druid
     };
     // Crit/agility to dodge/agility coefficient multipliers; 3.2.0 increased required agility by 15%
     const float crit_to_dodge[MAX_CLASSES] =
@@ -5863,7 +5861,7 @@ void Player::GetDodgeFromAgility(float &diminishing, float &nondiminishing)
          1.60f/1.15f,    // Shaman
          1.00f/1.15f,    // Mage
          0.97f/1.15f,    // Warlock (?)
-         0.0f,           // ??
+         2.00f/1.15f,    // Monk
          2.00f/1.15f     // Druid
     };
 
@@ -5874,17 +5872,21 @@ void Player::GetDodgeFromAgility(float &diminishing, float &nondiminishing)
         level = GT_MAX_LEVEL;
 
     // Dodge per agility is proportional to crit per agility, which is available from DBC files
-    GtChanceToMeleeCritEntry  const* dodgeRatio = sGtChanceToMeleeCritStore.LookupEntry((pclass-1)*GT_MAX_LEVEL + level-1);
+    GtChanceToMeleeCritEntry const* dodgeRatio = sGtChanceToMeleeCritStore.LookupEntry((pclass-1)*GT_MAX_LEVEL + (level - 1));
     if (dodgeRatio == NULL || pclass > MAX_CLASSES)
         return;
 
-    /// @todo research if talents/effects that increase total agility by x% should increase non-diminishing part
+    // TODO: research if talents/effects that increase total agility by x% should increase non-diminishing part
     float base_agility = GetCreateStat(STAT_AGILITY) * m_auraModifiersGroup[UNIT_MOD_STAT_START + STAT_AGILITY][BASE_PCT];
     float bonus_agility = GetStat(STAT_AGILITY) - base_agility;
 
+    float dodge_ratio = 1 / dodgeRatio->ratio;
+    if(pclass == CLASS_DEATH_KNIGHT || pclass == CLASS_PALADIN || pclass == CLASS_WARRIOR) dodge_ratio = 0;
+
     // calculate diminishing (green in char screen) and non-diminishing (white) contribution
-    diminishing = 100.0f * bonus_agility * dodgeRatio->ratio * crit_to_dodge[pclass-1];
-    nondiminishing = 100.0f * (dodge_base[pclass-1] + base_agility * dodgeRatio->ratio * crit_to_dodge[pclass-1]);
+    diminishing = bonus_agility * dodge_ratio * crit_to_dodge[pclass-1];
+    nondiminishing = dodge_base[pclass-1] + base_agility * dodge_ratio * crit_to_dodge[pclass-1];
+
 }
 
 float Player::GetSpellCritFromIntellect()
@@ -7415,8 +7417,8 @@ void Player::SendNewCurrency(uint32 id) const
         return;
 
     ByteBuffer currencyData;
-    WorldPacket packet(SMSG_INIT_CURRENCY, 4 + (5*4 + 1));
-    packet.WriteBits(1, 23);
+    WorldPacket packet(SMSG_INIT_CURRENCY, 3 + 1 + 4 + 4 + 4 + 4);
+    packet.WriteBits(1, 21);
 
     CurrencyTypesEntry const* entry = sCurrencyTypesStore.LookupEntry(id);
     if (!entry) // should never happen
@@ -7426,19 +7428,20 @@ void Player::SendNewCurrency(uint32 id) const
     uint32 weekCount = itr->second.weekCount / precision;
     uint32 weekCap = GetCurrencyWeekCap(entry) / precision;
 
-    packet.WriteBit(weekCount);
-    packet.WriteBits(0, 4); // some flags
+    packet.WriteBits(0, 5); // some flags
     packet.WriteBit(weekCap);
+    packet.WriteBit(weekCount);
     packet.WriteBit(0);     // season total earned
 
     currencyData << uint32(itr->second.totalCount / precision);
+    currencyData << uint32(entry->ID);
+
     if (weekCap)
         currencyData << uint32(weekCap);
 
     //if (seasonTotal)
     //    currencyData << uint32(seasonTotal / precision);
 
-    currencyData << uint32(entry->ID);
     if (weekCount)
         currencyData << uint32(weekCount);
 
@@ -7450,9 +7453,9 @@ void Player::SendNewCurrency(uint32 id) const
 void Player::SendCurrencies() const
 {
     ByteBuffer currencyData;
-    WorldPacket packet(SMSG_INIT_CURRENCY, 4 + _currencyStorage.size()*(5*4 + 1));
+    WorldPacket packet(SMSG_INIT_CURRENCY, 3 + (_currencyStorage.size() * (1 + 4 + 4 + 4 + 4)));
     size_t count_pos = packet.bitwpos();
-    packet.WriteBits(_currencyStorage.size(), 23);
+    packet.WriteBits(_currencyStorage.size(), 21);
 
     size_t count = 0;
     for (PlayerCurrenciesMap::const_iterator itr = _currencyStorage.begin(); itr != _currencyStorage.end(); ++itr)
@@ -7467,19 +7470,20 @@ void Player::SendCurrencies() const
         uint32 weekCount = itr->second.weekCount / precision;
         uint32 weekCap = GetCurrencyWeekCap(entry) / precision;
 
-        packet.WriteBit(weekCount);
-        packet.WriteBits(0, 4); // some flags
+        packet.WriteBits(0, 5); // some flags
         packet.WriteBit(weekCap);
+        packet.WriteBit(weekCount);
         packet.WriteBit(0);     // season total earned
 
         currencyData << uint32(itr->second.totalCount / precision);
+        currencyData << uint32(entry->ID);
+
         if (weekCap)
             currencyData << uint32(weekCap);
 
         //if (seasonTotal)
         //    currencyData << uint32(seasonTotal / precision);
 
-        currencyData << uint32(entry->ID);
         if (weekCount)
             currencyData << uint32(weekCount);
 
@@ -7488,7 +7492,7 @@ void Player::SendCurrencies() const
 
     packet.FlushBits();
     packet.append(currencyData);
-    packet.PutBits(count_pos, count, 23);
+    packet.PutBits(count_pos, count, 21);
     GetSession()->SendPacket(&packet);
 }
 
@@ -10131,8 +10135,27 @@ uint32 Player::GetXPRestBonus(uint32 xp)
 
 void Player::SetBindPoint(uint64 guid)
 {
-    WorldPacket data(SMSG_BINDER_CONFIRM, 8);
-    data << uint64(guid);
+    ObjectGuid ikGuid = guid;
+
+    WorldPacket data(SMSG_BINDER_CONFIRM, 1 + 8);
+    data.WriteBit(ikGuid[7]);
+    data.WriteBit(ikGuid[0]);
+    data.WriteBit(ikGuid[1]);
+    data.WriteBit(ikGuid[5]);
+    data.WriteBit(ikGuid[3]);
+    data.WriteBit(ikGuid[6]);
+    data.WriteBit(ikGuid[2]);
+    data.WriteBit(ikGuid[4]);
+
+    data.WriteByteSeq(ikGuid[3]);
+    data.WriteByteSeq(ikGuid[4]);
+    data.WriteByteSeq(ikGuid[6]);
+    data.WriteByteSeq(ikGuid[2]);
+    data.WriteByteSeq(ikGuid[1]);
+    data.WriteByteSeq(ikGuid[7]);
+    data.WriteByteSeq(ikGuid[5]);
+    data.WriteByteSeq(ikGuid[0]);
+
     GetSession()->SendPacket(&data);
 }
 
@@ -10284,7 +10307,27 @@ uint8 Player::FindEquipSlot(ItemTemplate const* proto, uint32 slot, bool swap) c
             slots[0] = EQUIPMENT_SLOT_OFFHAND;
             break;
         case INVTYPE_RANGED:
-            slots[0] = EQUIPMENT_SLOT_RANGED;
+            slots[0] = EQUIPMENT_SLOT_MAINHAND;
+            if (Item* mhWeapon = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+            {
+                if (ItemTemplate const* mhWeaponProto = mhWeapon->GetTemplate())
+                {
+                    if (mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                    {
+                        const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                        break;
+                    }
+                }
+            }
+
+            if (GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            {
+                if (proto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || proto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                {
+                    const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                    break;
+                }
+            }
             break;
         case INVTYPE_2HWEAPON:
             slots[0] = EQUIPMENT_SLOT_MAINHAND;
@@ -10324,10 +10367,51 @@ uint8 Player::FindEquipSlot(ItemTemplate const* proto, uint32 slot, bool swap) c
             slots[0] = EQUIPMENT_SLOT_OFFHAND;
             break;
         case INVTYPE_THROWN:
-            slots[0] = EQUIPMENT_SLOT_RANGED;
+            slots[0] = EQUIPMENT_SLOT_MAINHAND;
+            slots[0] = EQUIPMENT_SLOT_MAINHAND;
+            if (Item* mhWeapon = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+            {
+                if (ItemTemplate const* mhWeaponProto = mhWeapon->GetTemplate())
+                {
+                    if (mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                    {
+                        const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                        break;
+                    }
+                }
+            }
+
+            if (GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            {
+                if (proto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || proto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                {
+                    const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                    break;
+                }
+            }
             break;
         case INVTYPE_RANGEDRIGHT:
-            slots[0] = EQUIPMENT_SLOT_RANGED;
+            slots[0] = EQUIPMENT_SLOT_MAINHAND;
+            if (Item* mhWeapon = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+            {
+                if (ItemTemplate const* mhWeaponProto = mhWeapon->GetTemplate())
+                {
+                    if (mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                    {
+                        const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                        break;
+                    }
+                }
+            }
+
+            if (GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            {
+                if (proto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || proto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                {
+                    const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                    break;
+                }
+            }
             break;
         case INVTYPE_BAG:
             slots[0] = INVENTORY_SLOT_BAG_START + 0;
@@ -10339,7 +10423,29 @@ uint8 Player::FindEquipSlot(ItemTemplate const* proto, uint32 slot, bool swap) c
         {
            if (playerClass == CLASS_PALADIN || playerClass == CLASS_DRUID ||
                playerClass == CLASS_SHAMAN || playerClass == CLASS_DEATH_KNIGHT)
-               slots[0] = EQUIPMENT_SLOT_RANGED;
+           {
+               slots[0] = EQUIPMENT_SLOT_MAINHAND;
+               if (Item* mhWeapon = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+               {
+                   if (ItemTemplate const* mhWeaponProto = mhWeapon->GetTemplate())
+                   {
+                       if (mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || mhWeaponProto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                       {
+                           const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                           break;
+                       }
+                   }
+               }
+
+               if (GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+               {
+                   if (proto->SubClass == ITEM_SUBCLASS_WEAPON_POLEARM || proto->SubClass == ITEM_SUBCLASS_WEAPON_STAFF)
+                   {
+                       const_cast<Player*>(this)->AutoUnequipOffhandIfNeed(true);
+                       break;
+                   }
+               }
+           }
            break;
         }
         default:
@@ -12122,16 +12228,16 @@ InventoryResult Player::CanRollForItemInLFG(ItemTemplate const* proto, WorldObje
             else if (proto->SubClass != ITEM_SUBCLASS_ARMOR_MAIL)
                 return EQUIP_ERR_CLIENT_LOCKED_OUT;
         }
-		else if (_class == CLASS_MONK)
-		{
-			if (getLevel() < 50)
-			{
-				if (proto->SubClass != ITEM_SUBCLASS_ARMOR_CLOTH)
-					return EQUIP_ERR_CLIENT_LOCKED_OUT;
-			}
-			else if (proto->SubClass != ITEM_SUBCLASS_LEATHER)
-				return EQUIP_ERR_CLIENT_LOCKED_OUT;
-		}
+        else if (_class == CLASS_MONK)
+        {
+            if (getLevel() < 50)
+            {
+                if (proto->SubClass != ITEM_SUBCLASS_ARMOR_CLOTH)
+                    return EQUIP_ERR_CLIENT_LOCKED_OUT;
+            }
+            else if (proto->SubClass != ITEM_SUBCLASS_LEATHER)
+                return EQUIP_ERR_CLIENT_LOCKED_OUT;
+        }
 
         if (_class == CLASS_ROGUE || _class == CLASS_DRUID)
             if (proto->SubClass != ITEM_SUBCLASS_ARMOR_LEATHER)
@@ -13862,7 +13968,7 @@ void Player::ApplyReforgeEnchantment(Item* item, bool apply)
     if (!item)
         return;
 
-    ItemReforgeEntry const* reforge = sItemReforgeStore.LookupEntry(item->GetEnchantmentId(REFORGE_ENCHANTMENT_SLOT));
+    ItemReforgeEntry const* reforge = sItemReforgeStore.LookupEntry(item->GetDynamicUInt32Value(ITEM_DYNAMIC_MODIFIERS, 0));
     if (!reforge)
         return;
 
@@ -14100,14 +14206,10 @@ void Player::ApplyEnchantment(Item* item, bool apply)
 {
     for (uint32 slot = 0; slot < MAX_ENCHANTMENT_SLOT; ++slot)
     {
-        // Apply reforge as last enchant
-        if (slot == REFORGE_ENCHANTMENT_SLOT)
-            continue;
-
         ApplyEnchantment(item, EnchantmentSlot(slot), apply);
     }
 
-    ApplyEnchantment(item, REFORGE_ENCHANTMENT_SLOT, apply);
+    ApplyReforgeEnchantment(item, apply);
 }
 
 void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool apply_dur, bool ignore_condition)
@@ -14117,15 +14219,6 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
 
     if (slot >= MAX_ENCHANTMENT_SLOT)
         return;
-
-    if (slot == TRANSMOGRIFY_ENCHANTMENT_SLOT)
-        return;
-
-    if (slot == REFORGE_ENCHANTMENT_SLOT)
-    {
-        ApplyReforgeEnchantment(item, apply);
-        return;
-    }
 
     uint32 enchant_id = item->GetEnchantmentId(slot);
     if (!enchant_id)
@@ -15381,15 +15474,15 @@ bool Player::CanRewardQuest(Quest const* quest, uint32 reward, bool msg)
 
     if (quest->GetRewChoiceItemsCount() > 0)
     {
-        if (quest->RewardChoiceItemId[reward])
+        if (!quest->IsRewChoiceItemValid(reward))
+            return false;
+
+        ItemPosCountVec dest;
+        InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, reward, quest->GetRewChoiceItemCount(reward));
+        if (res != EQUIP_ERR_OK)
         {
-            ItemPosCountVec dest;
-            InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, quest->RewardChoiceItemId[reward], quest->RewardChoiceItemCount[reward]);
-            if (res != EQUIP_ERR_OK)
-            {
-                SendEquipError(res, NULL, NULL, quest->RewardChoiceItemId[reward]);
-                return false;
-            }
+            SendEquipError(res, NULL, NULL, reward);
+            return false;
         }
     }
 
@@ -15547,14 +15640,11 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
 
     if (quest->GetRewChoiceItemsCount() > 0)
     {
-        if (uint32 itemId = quest->RewardChoiceItemId[reward])
+        ItemPosCountVec dest;
+        if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, reward, quest->GetRewChoiceItemCount(reward)) == EQUIP_ERR_OK)
         {
-            ItemPosCountVec dest;
-            if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, quest->RewardChoiceItemCount[reward]) == EQUIP_ERR_OK)
-            {
-                Item* item = StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
-                SendNewItem(item, quest->RewardChoiceItemCount[reward], true, false);
-            }
+            Item* item = StoreNewItem(dest, reward, true, Item::GenerateItemRandomPropertyId(reward));
+            SendNewItem(item, quest->GetRewChoiceItemCount(reward), true, false);
         }
     }
 
@@ -16418,7 +16508,6 @@ void Player::SetQuestSlot(uint16 slot, uint32 quest_id, uint32 timer /*= 0*/)
     SetUInt32Value(PLAYER_FIELD_QUEST_LOG + slot * MAX_QUEST_OFFSET + QUEST_ID_OFFSET, quest_id);
     SetUInt32Value(PLAYER_FIELD_QUEST_LOG + slot * MAX_QUEST_OFFSET + QUEST_STATE_OFFSET, 0);
     SetUInt32Value(PLAYER_FIELD_QUEST_LOG + slot * MAX_QUEST_OFFSET + QUEST_COUNTS_OFFSET, 0);
-    SetUInt32Value(PLAYER_FIELD_QUEST_LOG + slot * MAX_QUEST_OFFSET + QUEST_COUNTS_OFFSET + 1, 0);
     SetUInt32Value(PLAYER_FIELD_QUEST_LOG + slot * MAX_QUEST_OFFSET + QUEST_TIME_OFFSET, timer);
 }
 
@@ -16980,17 +17069,16 @@ void Player::SendQuestReward(Quest const* quest, uint32 XP)
         moneyReward = uint32(quest->GetRewOrReqMoney() + int32(quest->GetRewMoneyMaxLevel() * sWorld->getRate(RATE_DROP_MONEY)));
     }
 
-    WorldPacket data(SMSG_QUESTGIVER_QUEST_COMPLETE, (4+4+4+4+4));
-
-    data << uint32(quest->GetBonusTalents());              // bonus talents (not verified for 4.x)
+    WorldPacket data(SMSG_QUESTGIVER_QUEST_COMPLETE, 4 + 4 + 4 + 4 + 4 + 4 + 1);
     data << uint32(quest->GetRewardSkillPoints());         // 4.x bonus skill points
+    data << uint32(questId);
+    data << uint32(quest->GetBonusTalents());              // bonus talents (still sent to 5.4.7 client)
+    data << uint32(quest->GetRewardSkillId());             // 4.x bonus skill id
     data << uint32(moneyReward);
     data << uint32(xp);
-    data << uint32(questId);
-    data << uint32(quest->GetRewardSkillId());             // 4.x bonus skill id
 
-    data.WriteBit(0);                                      // FIXME: unknown bits, common values sent
-    data.WriteBit(1);
+    data.WriteBit(1);                                      // FIXME: unknown bits, common values sent
+    data.WriteBit(0);
     data.FlushBits();
 
     GetSession()->SendPacket(&data);
@@ -17042,6 +17130,7 @@ void Player::SendQuestConfirmAccept(const Quest* quest, Player* pReceiver)
         data << uint32(quest->GetQuestId());
         data << strTitle;
         data << uint64(GetGUID());
+
         pReceiver->GetSession()->SendPacket(&data);
 
         TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUEST_CONFIRM_ACCEPT");
@@ -17069,14 +17158,34 @@ void Player::SendQuestUpdateAddCreatureOrGo(Quest const* quest, uint64 guid, uin
         // client expected gameobject template id in form (id|0x80000000)
         entry = (-entry) | 0x80000000;
 
-    WorldPacket data(SMSG_QUESTUPDATE_ADD_KILL, (4*4+8));
-    TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTUPDATE_ADD_KILL");
-    data << uint32(quest->GetQuestId());
+    ObjectGuid oGuid = guid;
+
+    WorldPacket data(SMSG_QUESTUPDATE_ADD_KILL, 1 + 8 + 2 + 1 + 4 + 2 + 4);
+    data.WriteBit(oGuid[5]);
+    data.WriteBit(oGuid[3]);
+    data.WriteBit(oGuid[6]);
+    data.WriteBit(oGuid[7]);
+    data.WriteBit(oGuid[4]);
+    data.WriteBit(oGuid[1]);
+    data.WriteBit(oGuid[2]);
+    data.WriteBit(oGuid[0]);
+
+    data.WriteByteSeq(oGuid[4]);
+    data << uint16(quest->RequiredNpcOrGoCount[ creatureOrGO_idx ]);
+    data << uint8(0);
+    data.WriteByteSeq(oGuid[6]);
     data << uint32(entry);
-    data << uint32(old_count + add_count);
-    data << uint32(quest->RequiredNpcOrGoCount[ creatureOrGO_idx ]);
-    data << uint64(guid);
+    data.WriteByteSeq(oGuid[0]);
+    data.WriteByteSeq(oGuid[3]);
+    data.WriteByteSeq(oGuid[1]);
+    data.WriteByteSeq(oGuid[5]);
+    data.WriteByteSeq(oGuid[2]);
+    data << uint16(old_count + add_count);
+    data.WriteByteSeq(oGuid[7]);
+    data << uint32(quest->GetQuestId());
+
     GetSession()->SendPacket(&data);
+    TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTUPDATE_ADD_KILL");
 
     uint16 log_slot = FindQuestSlot(quest->GetQuestId());
     if (log_slot < MAX_QUEST_LOG_SIZE)
@@ -17388,7 +17497,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
     SetByteValue(PLAYER_FIELD_ARENA_FACTION, 1, fields[45].GetUInt8());
     SetUInt32Value(PLAYER_FIELD_PLAYER_FLAGS, fields[11].GetUInt32());
     SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fields[44].GetUInt32());
-    SetUInt32Value(PLAYER_FIELD_VIRTUAL_PLAYER_REALM, sConfigMgr->GetIntDefault("RealmID", 0));
+    SetUInt32Value(PLAYER_FIELD_VIRTUAL_PLAYER_REALM, realmID);
 
     // set which actionbars the client has active - DO NOT REMOVE EVER AGAIN (can be changed though, if it does change fieldwise)
     SetByteValue(PLAYER_FIELD_LIFETIME_MAX_RANK, 2, fields[58].GetUInt8());
@@ -18223,8 +18332,8 @@ void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
             Field* fields = result->Fetch();
             if (Item* item = _LoadItem(trans, zoneId, timeDiff, fields))
             {
-                uint32 bagGuid  = fields[11].GetUInt32();
-                uint8  slot     = fields[12].GetUInt8();
+                uint32 bagGuid  = fields[13].GetUInt32();
+                uint8  slot     = fields[14].GetUInt8();
 
                 uint8 err = EQUIP_ERR_OK;
                 // Item is not in bag
@@ -18380,8 +18489,8 @@ void Player::_LoadVoidStorage(PreparedQueryResult result)
 Item* Player::_LoadItem(SQLTransaction& trans, uint32 zoneId, uint32 timeDiff, Field* fields)
 {
     Item* item = NULL;
-    uint32 itemGuid  = fields[13].GetUInt32();
-    uint32 itemEntry = fields[14].GetUInt32();
+    uint32 itemGuid  = fields[15].GetUInt32();
+    uint32 itemEntry = fields[16].GetUInt32();
     if (ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemEntry))
     {
         bool remove = false;
@@ -23437,8 +23546,25 @@ void Player::SendComboPoints()
         }
         else
             data.Initialize(SMSG_UPDATE_COMBO_POINTS, combotarget->GetPackGUID().size()+1);
-        data.append(combotarget->GetPackGUID());
+        ObjectGuid guid = combotarget->GetGUID();
+        data.WriteBit(guid[0]);
+        data.WriteBit(guid[2]);
+        data.WriteBit(guid[7]);
+        data.WriteBit(guid[5]);
+        data.WriteBit(guid[6]);
+        data.WriteBit(guid[3]);
+        data.WriteBit(guid[4]);
+        data.WriteBit(guid[1]);
+        data.FlushBits();
+        data.WriteByteSeq(guid[0]);
+        data.WriteByteSeq(guid[6]);
         data << uint8(m_comboPoints);
+        data.WriteByteSeq(guid[3]);
+        data.WriteByteSeq(guid[4]);
+        data.WriteByteSeq(guid[1]);
+        data.WriteByteSeq(guid[5]);
+        data.WriteByteSeq(guid[7]);
+        data.WriteByteSeq(guid[2]);
         GetSession()->SendPacket(&data);
     }
 }
@@ -23533,12 +23659,13 @@ void Player::SendInitialPacketsBeforeAddToMap()
     // guild bank list wtf?
 
     // Homebind
-    WorldPacket data(SMSG_BINDPOINTUPDATE, 5*4);
-    data << m_homebindZ;
-    data << m_homebindX;
-    data << (uint32) m_homebindMapId;
-    data << m_homebindY;
+    WorldPacket data(SMSG_BINDPOINTUPDATE, 4 + 4 + 4 + 4 + 4);
     data << (uint32) m_homebindAreaId;
+    data << m_homebindX;
+    data << m_homebindZ;
+    data << m_homebindY;
+    data << (uint32) m_homebindMapId;
+
     GetSession()->SendPacket(&data);
 
     // SMSG_SET_PROFICIENCY
@@ -23585,8 +23712,8 @@ void Player::SendInitialPacketsBeforeAddToMap()
     data.Initialize(SMSG_LOGIN_SETTIMESPEED, 20);
     data.AppendPackedTime(sWorld->GetGameTime());
     data << float(0.01666667f);                             // game speed
-    data << uint32(1);
-    data << uint32(1);
+    data << uint32(0);
+    data << uint32(0);
     data.AppendPackedTime(sWorld->GetGameTime());
 
     GetSession()->SendPacket(&data);
@@ -23958,7 +24085,7 @@ void Player::SendAurasForTarget(Unit* target)
     data.WriteBits(visibleAuras->size(), 24);           // Aura Count
     data.WriteBit(targetGuid[7]);
     data.WriteBit(targetGuid[6]);
-    
+
 
     for (Unit::VisibleAuraMap::const_iterator itr = visibleAuras->begin(); itr != visibleAuras->end(); ++itr)
     {
@@ -23967,11 +24094,11 @@ void Player::SendAurasForTarget(Unit* target)
         uint32 flags = auraApp->GetFlags();
         if (aura->GetMaxDuration() > 0 && !(aura->GetSpellInfo()->AttributesEx5 & SPELL_ATTR5_HIDE_DURATION))
             flags |= AFLAG_DURATION;
-            
+
         data.WriteBit(1);                               // Not remove
         data.WriteBit(flags & AFLAG_DURATION);          // HasDuration
         data.WriteBits(0, 22);                          // Unk effect count
-        
+
         data.WriteBit(flags & AFLAG_DURATION);          // HasMaxDuration
         data.WriteBit(!(flags & AFLAG_CASTER));         // HasCasterGuid
 
@@ -23986,7 +24113,7 @@ void Player::SendAurasForTarget(Unit* target)
         }
         else
             data.WriteBits(0, 22);                      // Effect Count
-            
+
 
         if (!(flags & AFLAG_CASTER))
         {
@@ -24002,7 +24129,7 @@ void Player::SendAurasForTarget(Unit* target)
         }
 
     }
-    
+
     data.WriteBit(targetGuid[2]);
     data.WriteBit(targetGuid[0]);
     data.WriteBit(targetGuid[1]);
@@ -24044,23 +24171,23 @@ void Player::SendAurasForTarget(Unit* target)
                 }
             }
         }
-        
+
         data << uint8(flags);
         data << uint32(aura->GetId());
         data << uint16(aura->GetCasterLevel());
         // send stack amount for aura which could be stacked (never 0 - causes incorrect display) or charges
         // stack amount has priority over charges (checked on retail with spell 50262)
         data << uint8(aura->GetSpellInfo()->StackAmount ? aura->GetStackAmount() : aura->GetCharges());
-        
+
         if (flags & AFLAG_DURATION)
             data << uint32(aura->GetMaxDuration());
 
         if (flags & AFLAG_DURATION)
             data << uint32(aura->GetDuration());
-            
+
             data << uint8(auraApp->GetSlot());
     }
-    
+
 
     data.WriteByteSeq(targetGuid[0]);
     data.WriteByteSeq(targetGuid[1]);
@@ -24809,9 +24936,27 @@ void Player::ResurectUsingRequestData()
 
 void Player::SetClientControl(Unit* target, uint8 allowMove)
 {
+    ObjectGuid guid = target->GetGUID();
+
     WorldPacket data(SMSG_CLIENT_CONTROL_UPDATE, target->GetPackGUID().size()+1);
-    data.append(target->GetPackGUID());
-    data << uint8(allowMove);
+    data.WriteBit(allowMove);
+    data.WriteBit(guid[7]);
+    data.WriteBit(guid[1]);
+    data.WriteBit(guid[6]);
+    data.WriteBit(guid[3]);
+    data.WriteBit(guid[2]);
+    data.WriteBit(guid[4]);
+    data.WriteBit(guid[5]);
+    data.WriteBit(guid[0]);
+
+    data.WriteByteSeq(guid[0]);
+    data.WriteByteSeq(guid[5]);
+    data.WriteByteSeq(guid[3]);
+    data.WriteByteSeq(guid[2]);
+    data.WriteByteSeq(guid[4]);
+    data.WriteByteSeq(guid[7]);
+    data.WriteByteSeq(guid[6]);
+    data.WriteByteSeq(guid[1]);
     GetSession()->SendPacket(&data);
     if (target == this && allowMove == 1)
         SetMover(this);
@@ -24826,23 +24971,23 @@ void Player::SetMover(Unit* target)
     ObjectGuid guid = target->GetGUID();
 
     WorldPacket data(SMSG_MOVE_SET_ACTIVE_MOVER, 9);
-    data.WriteBit(guid[5]);
-    data.WriteBit(guid[7]);
-    data.WriteBit(guid[3]);
-    data.WriteBit(guid[6]);
-    data.WriteBit(guid[0]);
-    data.WriteBit(guid[4]);
     data.WriteBit(guid[1]);
     data.WriteBit(guid[2]);
+    data.WriteBit(guid[4]);
+    data.WriteBit(guid[5]);
+    data.WriteBit(guid[3]);
+    data.WriteBit(guid[0]);
+    data.WriteBit(guid[7]);
+    data.WriteBit(guid[6]);
 
-    data.WriteByteSeq(guid[6]);
-    data.WriteByteSeq(guid[2]);
-    data.WriteByteSeq(guid[3]);
-    data.WriteByteSeq(guid[0]);
+    data.WriteByteSeq(guid[4]);
+    data.WriteByteSeq(guid[1]);
     data.WriteByteSeq(guid[5]);
     data.WriteByteSeq(guid[7]);
-    data.WriteByteSeq(guid[1]);
-    data.WriteByteSeq(guid[4]);
+    data.WriteByteSeq(guid[3]);
+    data.WriteByteSeq(guid[2]);
+    data.WriteByteSeq(guid[0]);
+    data.WriteByteSeq(guid[6]);
 
     SendDirectMessage(&data);
 }
@@ -26034,7 +26179,7 @@ bool Player::LearnTalent(uint16 talentId)
 
     if (!talentInfo)
         return false;
-        
+
     uint32 maxTalentRow = GetUInt32Value(PLAYER_FIELD_MAX_TALENT_TIERS);
 
     // prevent learn talent for different class (cheating)
@@ -26351,7 +26496,7 @@ void Player::BuildPetTalentsInfoData(WorldPacket* data)
 
             *data << uint32(talentInfo->TalentID);          // Talent.dbc
             *data << uint8(curtalent_maxrank);              // talentMaxRank (0-4)
-            
+
             ++talentIdCount;
         }
 
@@ -26596,30 +26741,30 @@ void Player::SendClearAllCooldowns(Unit* target)
     uint32 spellCount = m_spellCooldowns.size();
     ObjectGuid guid = target ? target->GetGUID() : 0;
 
-    WorldPacket data(SMSG_CLEAR_COOLDOWNS, 4+8);
-    data.WriteBit(guid[1]);
-    data.WriteBit(guid[3]);
+    WorldPacket data(SMSG_CLEAR_COOLDOWNS, 4+8+1+spellCount*4);
     data.WriteBit(guid[6]);
-    data.WriteBits(spellCount, 24); // Spell Count
-    data.WriteBit(guid[7]);
-    data.WriteBit(guid[5]);
-    data.WriteBit(guid[2]);
     data.WriteBit(guid[4]);
+    data.WriteBits(spellCount, 22); // Spell Count
+    data.WriteBit(guid[5]);
     data.WriteBit(guid[0]);
+    data.WriteBit(guid[3]);
+    data.WriteBit(guid[2]);
+    data.WriteBit(guid[7]);
+    data.WriteBit(guid[1]);
 
     data.FlushBits();
 
-    data.WriteByteSeq(guid[7]);
-    data.WriteByteSeq(guid[2]);
+    data.WriteByteSeq(guid[3]);
+    data.WriteByteSeq(guid[0]);
+    data.WriteByteSeq(guid[1]);
     data.WriteByteSeq(guid[4]);
     data.WriteByteSeq(guid[5]);
-    data.WriteByteSeq(guid[1]);
-    data.WriteByteSeq(guid[3]);
     for (SpellCooldowns::const_iterator itr = m_spellCooldowns.begin(); itr != m_spellCooldowns.end(); ++itr)
         data << uint32(itr->first); // Spell ID
 
-    data.WriteByteSeq(guid[0]);
     data.WriteByteSeq(guid[6]);
+    data.WriteByteSeq(guid[7]);
+    data.WriteByteSeq(guid[2]);
 
     SendDirectMessage(&data);
 }
@@ -26784,7 +26929,7 @@ void Player::UpdateSpecCount(uint8 count)
 
 void Player::ActivateSpec(uint8 spec)
 {
-    
+
     if (GetActiveSpec() == spec)
         return;
 
