@@ -552,6 +552,7 @@ class WorldSession
         void HandlePetitionDeclineOpcode(WorldPacket& recvData);
         void HandleOfferPetitionOpcode(WorldPacket& recvData);
         void HandleTurnInPetitionOpcode(WorldPacket& recvData);
+        void SendPetitionSignResults(ObjectGuid petitionGuid, ObjectGuid playerGuid, uint8 result);
 
         void HandleGuildQueryOpcode(WorldPacket& recvPacket);
         void HandleGuildInviteOpcode(WorldPacket& recvPacket);
@@ -618,7 +619,7 @@ class WorldSession
         void HandleStableSwapPet(WorldPacket& recvPacket);
         void HandleStableSwapPetCallback(PreparedQueryResult result, uint32 petId);
         void SendTrainerBuyFailed(uint64 guid, uint32 spellId, uint32 reason);
-        
+
         void HandleDuelProposedOpcode(WorldPacket& recvPacket);
         void HandleDuelAcceptedOpcode(WorldPacket& recvPacket);
         void HandleDuelCancelledOpcode(WorldPacket& recvPacket);
