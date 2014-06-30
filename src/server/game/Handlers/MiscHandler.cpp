@@ -1991,50 +1991,49 @@ void WorldSession::HandleReadyForAccountDataTimes(WorldPacket& /*recvData*/)
     SendAccountDataTimes(GLOBAL_CACHE_MASK);
 }
 
-void WorldSession::SendSetPhaseShift(std::set<uint32> const& phaseIds, std::set<uint32> const& terrainswaps)
+void WorldSession::SendSetPhaseShift(std::set<uint32> const& phaseIds, std::set<uint32> const& terrainswaps, std::set<uint32> const& worldMapAreas)
 {
     ObjectGuid guid = _player->GetGUID();
 
-    WorldPacket data(SMSG_SET_PHASE_SHIFT, 1 + 8 + 4 + 4 + 4 + 4 + 2 * phaseIds.size() + 4 + terrainswaps.size() * 2);
-    data.WriteBit(guid[2]);
+    WorldPacket data(SMSG_SET_PHASE_SHIFT, 1 + 8 + 2 * phaseIds.size() + 4 + 2 * worldMapAreas.size() + 2 * terrainswaps.size() + 4);
+    data.WriteBit(guid[0]);
     data.WriteBit(guid[3]);
     data.WriteBit(guid[1]);
-    data.WriteBit(guid[6]);
     data.WriteBit(guid[4]);
-    data.WriteBit(guid[5]);
-    data.WriteBit(guid[0]);
+    data.WriteBit(guid[6]);
+    data.WriteBit(guid[2]);
     data.WriteBit(guid[7]);
+    data.WriteBit(guid[5]);
 
-    data.WriteByteSeq(guid[7]);
     data.WriteByteSeq(guid[4]);
-
-    data << uint32(0);
-    //for (uint8 i = 0; i < worldMapAreaCount; ++i)
-    //    data << uint16(0);                    // WorldMapArea.dbc id (controls map display)
-
-    data.WriteByteSeq(guid[1]);
-
-    data << uint32(phaseIds.size() ? 0 : 8);  // flags (not phasemask)
-
+    data.WriteByteSeq(guid[3]);
     data.WriteByteSeq(guid[2]);
+
+    data << uint32(phaseIds.size()) * 2;        // Phase.dbc ids
+    for (std::set<uint32>::const_iterator itr = phaseIds.begin(); itr != phaseIds.end(); ++itr)
+        data << uint16(*itr);
+
+    data.WriteByteSeq(guid[0]);
     data.WriteByteSeq(guid[6]);
 
     data << uint32(0);                          // Inactive terrain swaps
     //for (uint8 i = 0; i < inactiveSwapsCount; ++i)
     //    data << uint16(0);
 
-    data << uint32(phaseIds.size()) * 2;        // Phase.dbc ids
-    for (std::set<uint32>::const_iterator itr = phaseIds.begin(); itr != phaseIds.end(); ++itr)
-        data << uint16(*itr);
+    data.WriteByteSeq(guid[1]);
+    data.WriteByteSeq(guid[7]);
 
-    data.WriteByteSeq(guid[3]);
-    data.WriteByteSeq(guid[0]);
+    data << uint32(worldMapAreas.size()) * 2;     // WorldMapArea.dbc id (controls map display)
+    for (std::set<uint32>::const_iterator itr = worldMapAreas.begin(); itr != worldMapAreas.end(); ++itr)
+        data << uint16(*itr);
 
     data << uint32(terrainswaps.size()) * 2;    // Active terrain swaps
     for (std::set<uint32>::const_iterator itr = terrainswaps.begin(); itr != terrainswaps.end(); ++itr)
         data << uint16(*itr);
 
     data.WriteByteSeq(guid[5]);
+
+    data << uint32(phaseIds.size() ? 0 : 8);  // flags (not phasemask)
 
     SendPacket(&data);
 }
@@ -2167,18 +2166,29 @@ void WorldSession::HandleRequestHotfix(WorldPacket& recvPacket)
         recvPacket.ReadByteSeq(guids[i][2]);
         recvPacket.ReadByteSeq(guids[i][3]);
 
-        switch (type)
+        // temp: this should be moved once broadcast text is properly implemented
+        if (type == DB2_REPLY_BROADCAST)
         {
-            case DB2_REPLY_BROADCAST:
-            {
-                SendBroadcastText(entry);
-                break;
-            }
-            default:
-                TC_LOG_ERROR("network", "SMSG_DB_REPLY: Unhandled hotfix type: %u", type);
+            SendBroadcastText(entry);
+            continue;
         }
 
-        //TC_LOG_ERROR("network", "SMSG_DB_REPLY: Sent hotfix entry: %u type: %u", entry, (uint32)store->GetHash());
+        if (!store->HasRecord(entry))
+            continue;
+
+        ByteBuffer record;
+        store->WriteRecord(entry, (uint32)GetSessionDbcLocale(), record);
+
+        WorldPacket data(SMSG_DB_REPLY);
+        data << uint32(entry);
+        data << uint32(time(NULL));
+        data << uint32(type);
+        data << uint32(record.size());
+        data.append(record);
+
+        SendPacket(&data);
+
+        TC_LOG_DEBUG("network", "SMSG_DB_REPLY: Sent hotfix entry: %u type: %u", entry, type);
     }
 
     delete[] guids;
@@ -2218,7 +2228,7 @@ void WorldSession::SendBroadcastText(uint32 entry)
 
     WorldPacket data(SMSG_DB_REPLY);
     data << uint32(entry);
-    data << uint32(0);
+    data << uint32(time(NULL));
     data << uint32(DB2_REPLY_BROADCAST);
     data << uint32(buffer.size());
     data.append(buffer);
